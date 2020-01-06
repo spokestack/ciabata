@@ -1,0 +1,13 @@
+/build
+
+.idea/
+*.iml
+
+# native dependencies
+/src/main/jniLibs
+
+# google credentials
+google.properties
+
+# wakeword models
+*.lite
