@@ -1,5 +1,11 @@
 package io.spokestack.ciabata
 
+import io.spokestack.spokestack.tts.SynthesisRequest
+
+/**
+ * An interface to be adopted by activities that hold references to UI elements used to display
+ * timer state to the user.
+ */
 interface TimerUI {
     // The timer state has changed.
     fun timeChanged(mode: String, seconds: Int)
@@ -18,7 +24,4 @@ interface TimerUI {
 
     // The speech pipeline is active, so the UI should be disabled.
     fun shouldDisableUI()
-
-    // The UI should deliver an audio message to the user
-    fun shouldSpeak(text: String, mode: TTSInputType = TTSInputType.TEXT)
 }

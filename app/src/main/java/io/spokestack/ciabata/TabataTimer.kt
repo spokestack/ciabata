@@ -1,8 +1,15 @@
 package io.spokestack.ciabata
 
 import android.os.CountDownTimer
+import android.os.Handler
+import android.os.Looper
+import io.spokestack.spokestack.tts.SynthesisRequest
 
-class TabataTimer {
+/**
+ * The timer logic. Dispatches state changes and associated voice prompts to a delegate capable of
+ * updating the UI.
+ */
+object TabataTimer {
 
     private var timer: TabataCountdown? = null
     private val settings = TimerSettings()
@@ -11,7 +18,7 @@ class TabataTimer {
     private var timeLeft = 0
     private var isRunning = false
     var uiDelegate: TimerUI? = null
-
+    var voiceDelegate: VoiceDelegate? = null
 
     init {
         updateSettings()
@@ -33,9 +40,16 @@ class TabataTimer {
 
     fun start() {
         if (!this.isRunning) {
-            timer = TabataCountdown(timeLeft * 1000L, 1000, this)
-            timer?.start()
-            isRunning = true
+            // if the timer was started by voice, but the ASR does
+            // not dispatch events on the main thread, we have to move
+            // back to it here, even though the UI updating code in
+            // MainActivity is forced onto the UI thread
+            val handler = Handler(Looper.getMainLooper())
+            handler.post {
+                timer = TabataCountdown(timeLeft * 1000L, 1000, this)
+                timer?.start()
+                isRunning = true
+            }
         }
     }
 
@@ -75,41 +89,52 @@ class TabataTimer {
     }
 
     private fun handleSpecialTimes() {
-        // the countdown starts at "3", but we're going to allow some time for
-        // the audio to start playing
-        if (timeLeft == 4) {
-            countdown()
+        when (timeLeft) {
+            // the countdown starts at "3", but we're going to allow some time for
+            // the synthesis request to deliver actual audio
+            4 -> countdown()
+            // same for announcing the next timer mode
+            1 -> voiceDelegate?.shouldSpeak(nextMode().text())
         }
     }
 
     private fun countdown() {
-        uiDelegate?.shouldSpeak(
-            """<speak>three <break time="500ms"/> two <break time="500ms"/> one</speak>""",
-            TTSInputType.SSML
+        // if the audio were retrieved before use and cached as mentioned in MainActivity, this
+        // could be broken up into separate clips to get the timing more exact, but this example
+        // demonstrates one possible use of SSML input
+        voiceDelegate?.shouldSpeak(
+            """<speak>three <break time="500ms"/> two <break time="500ms"/> one 
+                |<break time="500ms"/></speak>""".trimMargin(),
+            SynthesisRequest.Mode.SSML
         )
     }
 
     private fun changeModes() {
         when (curMode) {
             TimerMode.PREP -> {
-                curMode = TimerMode.WORK
                 timeLeft = settings.work
             }
             TimerMode.WORK -> {
                 curCycle += 1
-                curMode = TimerMode.REST
                 timeLeft = settings.rest
             }
             TimerMode.REST -> {
-                curMode = TimerMode.WORK
                 timeLeft = settings.work
             }
         }
-        uiDelegate?.shouldSpeak(curMode.text())
+        curMode = nextMode()
+    }
+
+    private fun nextMode(): TimerMode {
+        return when (curMode) {
+            TimerMode.PREP -> TimerMode.WORK
+            TimerMode.WORK -> TimerMode.REST
+            TimerMode.REST -> TimerMode.WORK
+        }
     }
 
     private fun timerDone() {
-        uiDelegate?.shouldSpeak("Done!")
+        voiceDelegate?.shouldSpeak("Done!")
     }
 }
 

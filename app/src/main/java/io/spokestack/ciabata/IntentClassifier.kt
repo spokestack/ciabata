@@ -1,7 +1,7 @@
 package io.spokestack.ciabata
 
 /**
- * The intents recognized by this app.
+ * The limited set of intents recognized by this app.
  */
 enum class Intent {
     START, STOP, RESET, UNKNOWN
@@ -40,6 +40,12 @@ object IntentClassifier {
     )
 
 
+    /**
+     * Turn unstructured text into one of a limited number of intents for the app to act on.
+     *
+     * @param utterance The full text of the user's utterance.
+     * @return an [Intent] for use by the timer.
+     */
     fun classify(utterance: String): Intent {
         for ((intent, regex) in intentMap) {
             regex.find(utterance)?.let {

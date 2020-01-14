@@ -103,7 +103,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="173dp"
         android:layout_marginEnd="180dp"
-        android:text="@string/work"
+        android:text="@string/prep"
         android:textSize="36sp"
         app:layout_constraintBottom_toTopOf="@+id/startButton"
         app:layout_constraintEnd_toEndOf="parent"
